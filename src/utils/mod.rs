@@ -126,17 +126,17 @@ pub mod file {
     use std::path::Path;
 
     /// Check if a file extension is supported for audio transcription
-    pub fn is_supported_audio_format(filename: &str) -> bool {
-        let supported_formats = ["wav", "mp3", "m4a", "flac", "ogg"];
+    // pub fn is_supported_audio_format(filename: &str) -> bool {
+    //     let supported_formats = ["wav", "mp3", "m4a", "flac", "ogg"];
 
-        if let Some(ext) = Path::new(filename).extension() {
-            if let Some(ext_str) = ext.to_str() {
-                return supported_formats.contains(&ext_str.to_lowercase().as_str());
-            }
-        }
+    //     if let Some(ext) = Path::new(filename).extension() {
+    //         if let Some(ext_str) = ext.to_str() {
+    //             return supported_formats.contains(&ext_str.to_lowercase().as_str());
+    //         }
+    //     }
 
-        false
-    }
+    //     false
+    // }
 
     /// Generate a unique filename for uploaded files
     pub fn generate_unique_filename(original_filename: &str) -> String {
