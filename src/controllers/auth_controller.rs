@@ -5,7 +5,12 @@ use crate::middlewares::extract_user_id;
 use crate::models::*;
 use crate::services::UserService;
 use crate::utils::{jwt, validation};
-use actix_web::{HttpRequest, HttpResponse, web};
+use actix_web::cookie::time::Duration;
+use actix_web::{
+    HttpRequest, HttpResponse,
+    cookie::{Cookie, SameSite},
+    web,
+};
 use uuid::Uuid;
 
 // Authentication controller
@@ -39,15 +44,22 @@ impl AuthController {
             app_state.config.refresh_token_expires_in,
         )?;
 
+        let cookie = Cookie::build("refresh_token", refresh_token)
+            .path("/")
+            .http_only(true)
+            .secure(true)
+            .max_age(Duration::days(7))
+            .same_site(SameSite::Strict)
+            .finish();
+
         let response = AuthResponse {
             access_token,
-            refresh_token,
             token_type: "Bearer".to_string(),
             expires_in: app_state.config.access_token_expires_in * 60, // Convert to seconds
             user: user.into(),
         };
 
-        Ok(HttpResponse::Created().json(response))
+        Ok(HttpResponse::Created().cookie(cookie).json(response))
     }
 
     /// Login user
@@ -77,27 +89,41 @@ impl AuthController {
             app_state.config.refresh_token_expires_in,
         )?;
 
+        let cookie = Cookie::build("refresh_token", refresh_token)
+            .path("/")
+            .http_only(true)
+            .secure(true)
+            .max_age(Duration::days(7))
+            .same_site(SameSite::Strict)
+            .finish();
+
         let response = AuthResponse {
             access_token,
-            refresh_token,
             token_type: "Bearer".to_string(),
             expires_in: app_state.config.access_token_expires_in * 60,
             user: user.into(),
         };
 
-        Ok(HttpResponse::Ok().json(response))
+        Ok(HttpResponse::Ok().cookie(cookie).json(response))
     }
 
     /// Refresh access token
     pub async fn refresh(
         app_state: web::Data<AppState>,
-        request: web::Json<RefreshTokenRequest>,
+        request: HttpRequest,
     ) -> AppResult<HttpResponse> {
         // Verify refresh token
-        let claims = UserService::verify_refresh_token(
-            &request.refresh_token,
-            &app_state.config.jwt_secret,
-        )?;
+
+        let refresh_token = match request.cookie("refresh_token") {
+            Some(cookie) => cookie.value().to_string(),
+            None => {
+                return Err(AppError::AuthError(
+                    "Refresh token not found in cookies".to_string(),
+                ));
+            }
+        };
+        let claims =
+            UserService::verify_refresh_token(&refresh_token, &app_state.config.jwt_secret)?;
 
         // Get user from database to ensure they still exist
         let user_id: Uuid = claims
@@ -115,16 +141,15 @@ impl AuthController {
             app_state.config.access_token_expires_in,
         )?;
 
-        let refresh_token = jwt::generate_refresh_token(
-            user.id,
-            &user.email,
-            &app_state.config.jwt_secret,
-            app_state.config.refresh_token_expires_in,
-        )?;
+        // let refresh_token = jwt::generate_refresh_token(
+        //     user.id,
+        //     &user.email,
+        //     &app_state.config.jwt_secret,
+        //     app_state.config.refresh_token_expires_in,
+        // )?;
 
         let response = AuthResponse {
             access_token,
-            refresh_token,
             token_type: "Bearer".to_string(),
             expires_in: app_state.config.access_token_expires_in * 60,
             user: user.into(),

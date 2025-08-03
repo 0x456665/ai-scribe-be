@@ -50,10 +50,10 @@ pub struct LoginRequest {
 }
 
 /// Token refresh request
-#[derive(Debug, Deserialize)]
-pub struct RefreshTokenRequest {
-    pub refresh_token: String,
-}
+// #[derive(Debug, Deserialize)]
+// pub struct RefreshTokenRequest {
+//     pub refresh_token: String,
+// }
 
 /// Response models for API endpoints
 
@@ -61,7 +61,7 @@ pub struct RefreshTokenRequest {
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub access_token: String,
-    pub refresh_token: String,
+    // pub refresh_token: String,
     pub token_type: String,
     pub expires_in: i64,
     pub user: UserResponse,
